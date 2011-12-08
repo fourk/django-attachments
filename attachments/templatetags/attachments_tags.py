@@ -94,3 +94,12 @@ def get_attachments_for(parser, token):
         'var_name': next_bit_for(bits, 'as', '"attachments"'),
     }
     return AttachmentsForObjectNode(**args)
+
+@register.simple_tag
+def render_attachment(attachment):
+    if attachment.image:
+        return ('<img src="%s" height="100" width="100">' %
+                attachment.attachment_file.url)
+    else:
+        return '%s' % attachment.filename
+

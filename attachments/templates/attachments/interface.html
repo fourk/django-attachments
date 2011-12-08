@@ -1,0 +1,17 @@
+{% load attachments_tags %}
+
+{% attachment_form content %}
+
+{% get_attachments_for content as "attachments" %}
+
+{% if attachments %}
+<ul class="attachments">
+    {% for att in attachments %}
+    <li class="attachment">
+    <a href="{{ att.attachment_file.url }}">{% render_attachment att %}</a>
+    {% attachment_delete_link att %}
+    </li>
+    {% endfor %}
+</ul>
+{% endif %}
+

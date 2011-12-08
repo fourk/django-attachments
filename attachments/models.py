@@ -1,6 +1,11 @@
 from datetime import datetime
+from PIL import Image
+from cStringIO import StringIO
+import urllib
 import os
 from django.db import models
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes import generic
@@ -28,6 +33,7 @@ class Attachment(models.Model):
     content_object = generic.GenericForeignKey('content_type', 'object_id')
     creator = models.ForeignKey(User, related_name="created_attachments", verbose_name=_('creator'))
     attachment_file = models.FileField(_('attachment'), upload_to=attachment_upload)
+    image = models.NullBooleanField(blank=True, null=True, default=None)
     created = models.DateTimeField(_('created'), auto_now_add=True)
     modified = models.DateTimeField(_('modified'), auto_now=True)
 
@@ -43,3 +49,20 @@ class Attachment(models.Model):
     @property
     def filename(self):
         return os.path.split(self.attachment_file.name)[1]
+
+@receiver(post_save, sender=Attachment, dispatch_uid="check_if_image")
+def check_if_image(sender, **kwargs):
+    if kwargs.get('raw'): return #loading data from fixture or something
+    attachment = kwargs.get('instance')
+    if attachment.image is not None:
+        #already checked to see if this is an image
+        return
+    try:
+        img_file = urllib.urlopen(attachment.attachment_file.url)
+        im = StringIO(img_file.read())
+        Image.open(im)
+        attachment.image = True
+    except IOError:
+        attachment.image = False
+    attachment.save()
+
